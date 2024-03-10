@@ -233,3 +233,140 @@ func TestAddUserService(t *testing.T) {
 		accountRepositoryMock.Mock.AssertExpectations(t)
 	})
 }
+
+func TestGetAccountByEmailService(t *testing.T) {
+	t.Run("test get account by email error validation", func(t *testing.T) {
+		db, _, err := sqlmock.New()
+		assert.Nil(t, err)
+
+		validate := validator.New()
+		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		accountRepositoryMock := mck.NewAccountRepository()
+		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+
+		// test
+		email := "reoshby"
+		account, err := accountService.GetByEmail(context.Background(), email)
+		_, ok := err.(validator.ValidationErrors)
+		assert.Nil(t, account)
+		assert.NotNil(t, err)
+		assert.Error(t, err)
+		assert.True(t, ok)
+	})
+	t.Run("test get account by email error internal server error", func(t *testing.T) {
+		db, dbMock, err := sqlmock.New()
+		assert.Nil(t, err)
+
+		validate := validator.New()
+		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		accountRepositoryMock := mck.NewAccountRepository()
+		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+
+		// mock
+		dbMock.ExpectBegin()
+		dbMock.ExpectRollback()
+
+		errMessage := "error internal server error"
+		accountRepositoryMock.Mock.On("GetByEmail", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil, customError.NewInternalServerError(errMessage))
+
+		// test
+		account, err := accountService.GetByEmail(context.Background(), "reoshby@gmail.com")
+		_, ok := err.(*customError.InternalServerError)
+		assert.Nil(t, account)
+		assert.NotNil(t, err)
+		assert.Error(t, err)
+		assert.True(t, ok)
+		assert.Equal(t, errMessage, err.Error())
+		accountRepositoryMock.Mock.AssertExpectations(t)
+	})
+	t.Run("test get account by email error bad request", func(t *testing.T) {
+		db, dbMock, err := sqlmock.New()
+		assert.Nil(t, err)
+
+		validate := validator.New()
+		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		accountRepositoryMock := mck.NewAccountRepository()
+		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+
+		// mock
+		dbMock.ExpectBegin()
+		dbMock.ExpectRollback()
+
+		errMessage := "failed to get record error bad request"
+		accountRepositoryMock.Mock.On("GetByEmail", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil, customError.NewBadRequestError(errMessage))
+
+		// test
+		account, err := accountService.GetByEmail(context.Background(), "reoshby@gmail.com")
+		_, ok := err.(*customError.BadRequestError)
+
+		assert.Nil(t, account)
+		assert.NotNil(t, err)
+		assert.Error(t, err)
+		assert.True(t, ok)
+		assert.Equal(t, errMessage, err.Error())
+		accountRepositoryMock.Mock.AssertExpectations(t)
+	})
+	t.Run("test get account by email error not found", func(t *testing.T) {
+		db, dbMock, err := sqlmock.New()
+		assert.Nil(t, err)
+
+		validate := validator.New()
+		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		accountRepositoryMock := mck.NewAccountRepository()
+		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+
+		// mock
+		dbMock.ExpectBegin()
+		dbMock.ExpectRollback()
+
+		errMessage := "record not found"
+		accountRepositoryMock.Mock.On("GetByEmail", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil, customError.NewNotFoundError(errMessage))
+
+		// test
+		account, err := accountService.GetByEmail(context.Background(), "reoshby@gmail.com")
+		_, ok := err.(*customError.NotFoundError)
+
+		assert.Nil(t, account)
+		assert.NotNil(t, err)
+		assert.Error(t, err)
+		assert.True(t, ok)
+		assert.Equal(t, errMessage, err.Error())
+		accountRepositoryMock.Mock.AssertExpectations(t)
+	})
+	t.Run("test get account by email success", func(t *testing.T) {
+		db, dbMock, err := sqlmock.New()
+		assert.Nil(t, err)
+
+		validate := validator.New()
+		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		accountRepositoryMock := mck.NewAccountRepository()
+		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+
+		// mock
+		dbMock.ExpectBegin()
+		dbMock.ExpectCommit()
+
+		accountRepositoryMock.Mock.On("GetByEmail", mock.Anything, mock.Anything, mock.Anything).
+			Return(&entity.Account{
+				Id:        1,
+				Email:     "reoshby@gmail.com",
+				Username:  "rshby",
+				Password:  "123456",
+				CreatedAt: helper.StringToDate("2020-10-10 00:00:00"),
+				UpdatedAt: helper.StringToDate("2020-10-10 00:00:00"),
+			}, nil)
+
+		// test
+		account, err := accountService.GetByEmail(context.Background(), "reoshby@gmail.com")
+		assert.Nil(t, err)
+		assert.NotNil(t, account)
+		assert.Equal(t, 1, account.Id)
+		assert.Equal(t, "reoshby@gmail.com", account.Email)
+		assert.Equal(t, "rshby", account.Username)
+		assert.Equal(t, "2020-10-10 00:00:00", account.CreatedAt)
+		assert.Equal(t, "2020-10-10 00:00:00", account.UpdatedAt)
+	})
+}

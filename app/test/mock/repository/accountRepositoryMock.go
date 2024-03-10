@@ -28,8 +28,14 @@ func (a *AccountRepositoryMock) Add(ctx context.Context, tx *sql.Tx, input *enti
 }
 
 func (a *AccountRepositoryMock) GetByEmail(ctx context.Context, tx *sql.Tx, email string) (*entity.Account, error) {
-	//TODO implement me
-	panic("implement me")
+	args := a.Mock.Called(ctx, tx, email)
+
+	value := args.Get(0)
+	if value == nil {
+		return nil, args.Error(1)
+	}
+
+	return value.(*entity.Account), nil
 }
 
 func (a *AccountRepositoryMock) Update(ctx context.Context, tx *sql.Tx, input *entity.Account) (*entity.Account, error) {

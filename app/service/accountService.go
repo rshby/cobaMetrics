@@ -32,6 +32,7 @@ func NewAccountService(db *sql.DB, validate *validator.Validate, accRepo IRepo.I
 	}
 }
 
+// method implementasi Add new account
 func (a *AccountService) Add(ctx context.Context, request *dto.AddUserRequest) (*dto.AddUserResponse, error) {
 	// start tracing
 	span, ctxTracing := opentracing.StartSpanFromContext(ctx, "Service Add Account")
@@ -83,5 +84,49 @@ func (a *AccountService) Add(ctx context.Context, request *dto.AddUserRequest) (
 	tx.Commit()
 	resJson, _ := json.Marshal(&response)
 	span.LogFields(log.String("response", string(resJson)))
+	return &response, nil
+}
+
+// method implementasi GetByEmail
+func (a *AccountService) GetByEmail(ctx context.Context, email string) (*dto.AccountDetailResponse, error) {
+	// start span tracing
+	span, ctxTracing := opentracing.StartSpanFromContext(ctx, "AccountService GetByEmail")
+	defer span.Finish()
+
+	// log with tracer
+	span.LogFields(
+		log.String("email", email))
+
+	// validate
+	if err := a.Validate.Var(email, "email"); err != nil {
+		return nil, err
+	}
+
+	// start transaction
+	tx, _ := a.DB.Begin()
+	defer tx.Rollback()
+
+	// call procedure in repository
+	account, err := a.AccRepo.GetByEmail(ctxTracing, tx, email)
+	if err != nil {
+		return nil, err
+	}
+
+	// convert to response
+	var response = dto.AccountDetailResponse{
+		Id:        account.Id,
+		Email:     account.Email,
+		Username:  account.Username,
+		Password:  account.Password,
+		CreatedAt: helper.DateToString(account.CreatedAt),
+		UpdatedAt: helper.DateToString(account.UpdatedAt),
+	}
+
+	// log with tracer
+	responseJson, _ := json.Marshal(&response)
+	span.LogFields(
+		log.String("response", string(responseJson)))
+
+	tx.Commit()
 	return &response, nil
 }
