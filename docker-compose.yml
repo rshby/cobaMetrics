@@ -1,0 +1,48 @@
+version: "3.8"
+
+networks:
+  cobaMetrics-network:
+      name: cobaMetrics-network
+      driver: bridge
+
+volumes:
+  promethus-data:
+    name: promethus-data
+
+services:
+  mysql:
+    image: mysql
+    container_name: mysql
+    restart: on-failure
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    networks:
+      - cobaMetrics-network
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: on-failure
+    ports:
+      - target: 9090
+        published: 9090
+        protocol: tcp
+        mode: host
+    volumes:
+      - ./prometheus/:/etc/prometheus/
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: on-failure
+    ports:
+      - target: 3000
+        published: 3000
+        protocol: tcp
+        mode: host
+    depends_on:
+      - prometheus

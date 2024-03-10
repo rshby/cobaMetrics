@@ -1,0 +1,15 @@
+{
+  "app" : {
+    "port" : 5005
+  },
+  "database" : {
+    "host" : "localhost",
+    "user" : "root",
+    "password" : "root",
+    "port": 3306,
+    "name": "coba_metrics"
+  },
+  "jwt": {
+    "secret_key": "sangatrahasia123"
+  }
+}
