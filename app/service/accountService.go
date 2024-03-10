@@ -76,7 +76,7 @@ func (a *AccountService) Add(ctx context.Context, request *dto.AddUserRequest) (
 		Id:        account.Id,
 		Email:     account.Email,
 		Username:  account.Username,
-		CreatedAt: input.CreatedAt.Format("2006-01-02 15:04:05"),
+		CreatedAt: account.CreatedAt.Format("2006-01-02 15:04:05"),
 	}
 
 	// success

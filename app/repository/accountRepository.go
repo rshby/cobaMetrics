@@ -9,6 +9,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/log"
+	"time"
 )
 
 type Account struct {
@@ -35,6 +36,7 @@ func (a *Account) Add(ctx context.Context, tx *sql.Tx, input *entity.Account) (*
 
 	id, _ := result.LastInsertId()
 	input.Id = int(id)
+	input.CreatedAt = time.Now()
 
 	// success
 	responseJson, _ := json.Marshal(&input)
