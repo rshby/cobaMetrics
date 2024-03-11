@@ -39,8 +39,14 @@ func (a *AccountRepositoryMock) GetByEmail(ctx context.Context, tx *sql.Tx, emai
 }
 
 func (a *AccountRepositoryMock) Update(ctx context.Context, tx *sql.Tx, input *entity.Account) (*entity.Account, error) {
-	//TODO implement me
-	panic("implement me")
+	args := a.Mock.Called(ctx, tx, input)
+
+	value := args.Get(0)
+	if value == nil {
+		return nil, args.Error(1)
+	}
+
+	return value.(*entity.Account), nil
 }
 
 func (a *AccountRepositoryMock) DeleteByEmail(ctx context.Context, tx *sql.Tx, email string) error {

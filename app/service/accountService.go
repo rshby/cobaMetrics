@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"github.com/go-playground/validator/v10"
 	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
 	"time"
 )
@@ -99,6 +100,7 @@ func (a *AccountService) GetByEmail(ctx context.Context, email string) (*dto.Acc
 
 	// validate
 	if err := a.Validate.Var(email, "email"); err != nil {
+		ext.Error.Set(span, true)
 		return nil, err
 	}
 
@@ -126,6 +128,66 @@ func (a *AccountService) GetByEmail(ctx context.Context, email string) (*dto.Acc
 	responseJson, _ := json.Marshal(&response)
 	span.LogFields(
 		log.String("response", string(responseJson)))
+
+	tx.Commit()
+	return &response, nil
+}
+
+// implementasi method Update data account
+func (a *AccountService) Update(ctx context.Context, request *dto.UpdateAccountRequest) (*dto.AccountDetailResponse, error) {
+	// start span tracing
+	span, ctxTracing := opentracing.StartSpanFromContext(ctx, "AccountService Update")
+	defer span.Finish()
+
+	// log with tracing
+	requestJson, _ := json.Marshal(&request)
+	span.LogFields(
+		log.String("request", string(requestJson)))
+
+	// validate
+	if err := a.Validate.Struct(*request); err != nil {
+		ext.Error.Set(span, true)
+		return nil, err
+	}
+
+	// hashed new password
+	hashedPassword, err := a.HelperPassword.HashPassword(request.Password)
+	if err != nil {
+		ext.Error.Set(span, true)
+		return nil, customError.NewInternalServerError(err.Error())
+	}
+
+	// create input
+	input := entity.Account{
+		Id:       request.Id,
+		Email:    request.Email,
+		Username: request.Username,
+		Password: hashedPassword,
+	}
+
+	// create transaction
+	tx, _ := a.DB.Begin()
+	defer tx.Rollback()
+
+	// call procedure in repository
+	account, err := a.AccRepo.Update(ctxTracing, tx, &input)
+	if err != nil {
+		ext.Error.Set(span, true)
+		return nil, err
+	}
+
+	// create response
+	response := dto.AccountDetailResponse{
+		Id:        account.Id,
+		Email:     account.Email,
+		Username:  account.Username,
+		Password:  account.Password,
+		UpdatedAt: helper.DateToString(account.UpdatedAt),
+	}
+
+	// log witn tracing
+	responseJson, _ := json.Marshal(&response)
+	span.LogFields(log.String("response", string(responseJson)))
 
 	tx.Commit()
 	return &response, nil

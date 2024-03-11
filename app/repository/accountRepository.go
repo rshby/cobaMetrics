@@ -85,9 +85,36 @@ func (a *AccountRepository) GetByEmail(ctx context.Context, tx *sql.Tx, email st
 	return &account, nil
 }
 
+// implementasi method Update data account
 func (a *AccountRepository) Update(ctx context.Context, tx *sql.Tx, input *entity.Account) (*entity.Account, error) {
-	//TODO implement me
-	panic("implement me")
+	// start span tracing
+	span, ctxTracing := opentracing.StartSpanFromContext(ctx, "AccountRepository Update")
+	defer span.Finish()
+
+	// log with tracing
+	requestJson, _ := json.Marshal(&input)
+	span.LogFields(
+		log.String("request", string(requestJson)))
+
+	// update
+	result, err := tx.ExecContext(ctxTracing, "UPDATE accounts SET email=?, username=?, password=? WHERE id = ?",
+		input.Email, input.Username, input.Password, input.Id)
+	if err != nil {
+		return nil, customError.NewInternalServerError(err.Error())
+	}
+
+	if row, _ := result.RowsAffected(); row == 0 {
+		return nil, customError.NewInternalServerError("failed to update data account")
+	}
+
+	input.UpdatedAt = time.Now()
+
+	// log with tracing
+	responseJson, _ := json.Marshal(&input)
+	span.LogFields(
+		log.String("response", string(responseJson)))
+
+	return input, nil
 }
 
 func (a *AccountRepository) DeleteByEmail(ctx context.Context, tx *sql.Tx, email string) error {
