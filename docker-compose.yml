@@ -21,6 +21,24 @@ services:
     networks:
       - cobaMetrics-network
 
+  jaeger:
+    image: jaegertracing/all-in-one
+    container_name: jaeger
+    restart: on-failure
+    ports:
+      - target: 16686
+        published: 16686
+        protocol: tcp
+        mode: host
+      - target: 6831
+        published: 6831
+        protocol: udp
+        mode: host
+    networks:
+      - cobaMetrics-network
+    depends_on:
+      - mysql
+
   prometheus:
     image: prom/prometheus
     container_name: prometheus

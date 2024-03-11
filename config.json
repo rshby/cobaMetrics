@@ -9,6 +9,11 @@
     "port": 3306,
     "name": "coba_metrics"
   },
+  "jaeger" : {
+    "service_name" : "cobaMetrics",
+    "host" : "localhost",
+    "port" : 6831
+  },
   "jwt": {
     "secret_key": "sangatrahasia123"
   }

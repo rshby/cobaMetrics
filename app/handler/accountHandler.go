@@ -69,11 +69,16 @@ func (a *AccountHandler) Add(ctx *fiber.Ctx) error {
 
 			statusCode := http.StatusBadRequest
 			ctx.Status(statusCode)
-			return ctx.JSON(&dto.ApiResponse{
+			response := dto.ApiResponse{
 				StatusCode: statusCode,
 				Status:     helper.CodeToStatus(statusCode),
 				Message:    strings.Join(errMessage, ". "),
-			})
+			}
+
+			// log with tracing
+			responseJson, _ := json.Marshal(&response)
+			span.LogFields(log.String("response", string(responseJson)))
+			return ctx.JSON(&response)
 		}
 
 		var statusCode int
