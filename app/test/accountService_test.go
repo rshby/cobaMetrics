@@ -554,6 +554,49 @@ func TestUpdateAccountService(t *testing.T) {
 		accountRepositoryMock.Mock.AssertExpectations(t)
 	})
 	t.Run("test update success", func(t *testing.T) {
-		// TODO : kerjakan unit test update account success
+		db, dbMock, err := sqlmock.New()
+		assert.Nil(t, err)
+
+		validate := validator.New()
+		accountRepositoryMock := mck.NewAccountRepository()
+		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+
+		// mock
+		dbMock.ExpectBegin()
+		dbMock.ExpectCommit()
+
+		helperPasswordMock.Mock.On("HashPassword", mock.Anything).
+			Return("123456", nil).Times(1)
+
+		accountRepositoryMock.Mock.On("Update", mock.Anything, mock.Anything, mock.Anything).
+			Return(&entity.Account{
+				Id:        1,
+				Email:     "reoshby@gmail.com",
+				Username:  "rshby",
+				Password:  "123456",
+				CreatedAt: helper.StringToDate("2020-10-10 00:00:00"),
+				UpdatedAt: helper.StringToDate("2020-10-10 00:00:00"),
+			}, nil).Times(1)
+
+		// test
+		request := dto.UpdateAccountRequest{
+			Id:              1,
+			Email:           "reoshby@gmail.com",
+			Username:        "rshby",
+			Password:        "123456",
+			ConfirmPassword: "123456",
+		}
+		account, err := accountService.Update(context.Background(), &request)
+
+		assert.Nil(t, err)
+		assert.NotNil(t, account)
+		assert.Equal(t, 1, account.Id)
+		assert.Equal(t, "reoshby@gmail.com", account.Email)
+		assert.Equal(t, "rshby", account.Username)
+		assert.Equal(t, "123456", account.Password)
+		assert.Equal(t, "2020-10-10 00:00:00", account.UpdatedAt)
+		helperPasswordMock.Mock.AssertExpectations(t)
+		accountRepositoryMock.Mock.AssertExpectations(t)
 	})
 }
