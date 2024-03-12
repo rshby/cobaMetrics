@@ -45,12 +45,16 @@ func (a *AccountService) Add(ctx context.Context, request *dto.AddUserRequest) (
 
 	// validate
 	if err := a.Validate.Struct(*request); err != nil {
+		span.LogFields(log.String("response", err.Error()))
+		ext.Error.Set(span, true)
 		return nil, err
 	}
 
 	// hash password
 	hashedPassword, err := a.HelperPassword.HashPassword(request.Password)
 	if err != nil {
+		span.LogFields(log.String("response", err.Error()))
+		ext.Error.Set(span, true)
 		return nil, customError.NewInternalServerError(err.Error())
 	}
 
@@ -67,9 +71,19 @@ func (a *AccountService) Add(ctx context.Context, request *dto.AddUserRequest) (
 	tx, _ := a.DB.Begin()
 	defer tx.Rollback()
 
+	// cek if email already exist
+	if _, err = a.AccRepo.GetByEmail(ctxTracing, tx, request.Email); err == nil {
+		errMessage := "email already exist in database"
+		span.LogFields(log.String("response", errMessage))
+		ext.Error.Set(span, true)
+		return nil, customError.NewBadRequestError(errMessage)
+	}
+
 	// call procedure insert in repository
 	account, err := a.AccRepo.Add(ctxTracing, tx, &input)
 	if err != nil {
+		span.LogFields(log.String("response", err.Error()))
+		ext.Error.Set(span, true)
 		return nil, err
 	}
 
@@ -100,6 +114,7 @@ func (a *AccountService) GetByEmail(ctx context.Context, email string) (*dto.Acc
 
 	// validate
 	if err := a.Validate.Var(email, "email"); err != nil {
+		span.LogFields(log.String("response", err.Error()))
 		ext.Error.Set(span, true)
 		return nil, err
 	}
@@ -111,6 +126,8 @@ func (a *AccountService) GetByEmail(ctx context.Context, email string) (*dto.Acc
 	// call procedure in repository
 	account, err := a.AccRepo.GetByEmail(ctxTracing, tx, email)
 	if err != nil {
+		span.LogFields(log.String("response", err.Error()))
+		ext.Error.Set(span, true)
 		return nil, err
 	}
 
@@ -191,4 +208,10 @@ func (a *AccountService) Update(ctx context.Context, request *dto.UpdateAccountR
 
 	tx.Commit()
 	return &response, nil
+}
+
+// implementasi method Login
+func (a *AccountService) Login(ctx context.Context, request *dto.LoginRequest) (*dto.LoginResponse, error) {
+	//TODO kerjakan method login
+	panic("implement me")
 }

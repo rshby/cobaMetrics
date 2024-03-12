@@ -12,12 +12,12 @@ func AddMetrics() *MetricsApp {
 		prometheus.CounterOpts{
 			Name: "http_request_total_masuk",
 			Help: "menghitung total request yang masuk",
-		}, []string{"path"})
+		}, []string{"path", "method"})
 
 	durationReq := prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name: "http_request_endpoint_duration",
 		Help: "durasi setiap enpoint diprocess",
-	}, []string{"path"})
+	}, []string{"path", "method"})
 
 	return &MetricsApp{
 		CounterReq:  countReq,

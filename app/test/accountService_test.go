@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"testing"
+	"time"
 )
 
 // unit test method Add
@@ -95,6 +96,9 @@ func TestAddUserService(t *testing.T) {
 		helperPassword.Mock.On("HashPassword", mock.Anything).
 			Return("123456", nil)
 
+		accountRepositoryMock.Mock.On("GetByEmail", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil, errors.New("record not found")).Times(1)
+
 		errMessage := "failed to add new data"
 		accountRepositoryMock.Mock.On("Add", mock.Anything, mock.Anything, mock.Anything).
 			Return(nil, customError.NewInternalServerError(errMessage))
@@ -130,6 +134,9 @@ func TestAddUserService(t *testing.T) {
 
 		helperPassword.Mock.On("HashPassword", mock.Anything).
 			Return("123456", nil)
+
+		accountRepositoryMock.Mock.On("GetByEmail", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil, errors.New("record not found")).Times(1)
 
 		errMessage := "error bad request when add data"
 		accountRepositoryMock.Mock.On("Add", mock.Anything, mock.Anything, mock.Anything).
@@ -168,6 +175,9 @@ func TestAddUserService(t *testing.T) {
 		helperPasswordMock.Mock.On("HashPassword", mock.Anything).
 			Return("123456", nil)
 
+		accountRepositoryMock.Mock.On("GetByEmail", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil, errors.New("record not found")).Times(1)
+
 		errMessage := "record not found"
 		accountRepositoryMock.Mock.On("Add", mock.Anything, mock.Anything, mock.Anything).
 			Return(nil, customError.NewNotFoundError(errMessage))
@@ -190,6 +200,46 @@ func TestAddUserService(t *testing.T) {
 		helperPasswordMock.Mock.AssertExpectations(t)
 		accountRepositoryMock.Mock.AssertExpectations(t)
 	})
+	t.Run("add account error email already exist", func(t *testing.T) {
+		db, dbMock, err := sqlmock.New()
+		assert.Nil(t, err)
+
+		validate := validator.New()
+		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		accountRepositoryMock := mck.NewAccountRepository()
+		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+
+		// mock
+		dbMock.ExpectBegin()
+		dbMock.ExpectRollback()
+
+		helperPasswordMock.Mock.On("HashPassword", mock.Anything).
+			Return("123456", nil).Times(1)
+
+		errMessage := "email already exist in database"
+		accountRepositoryMock.Mock.On("GetByEmail", mock.Anything, mock.Anything, mock.Anything).
+			Return(&entity.Account{
+				Id:        1,
+				Email:     "reoshby@gmail.com",
+				Username:  "rshby",
+				Password:  "123456",
+				CreatedAt: time.Time{},
+				UpdatedAt: time.Time{},
+			}, nil).Times(1)
+
+		// test
+		account, err := accountService.Add(context.Background(), &dto.AddUserRequest{
+			Email:    "reoshby@gmail.com",
+			Username: "rshby",
+			Password: "123456",
+		})
+		assert.Nil(t, account)
+		assert.NotNil(t, err)
+		assert.Error(t, err)
+		assert.Equal(t, errMessage, err.Error())
+		helperPasswordMock.Mock.AssertExpectations(t)
+		accountRepositoryMock.Mock.AssertExpectations(t)
+	})
 	t.Run("add account success", func(t *testing.T) {
 		db, dbMock, err := sqlmock.New()
 		assert.Nil(t, err)
@@ -205,6 +255,9 @@ func TestAddUserService(t *testing.T) {
 
 		helperPasswordMock.Mock.On("HashPassword", mock.Anything).
 			Return("123456", nil)
+
+		accountRepositoryMock.Mock.On("GetByEmail", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil, errors.New("record not found")).Times(1)
 
 		accountRepositoryMock.Mock.On("Add", mock.Anything, mock.Anything, mock.Anything).
 			Return(&entity.Account{

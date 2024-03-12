@@ -121,3 +121,78 @@ func (a *AccountHandler) Add(ctx *fiber.Ctx) error {
 
 	return ctx.JSON(&response)
 }
+
+// handler get data accounts by email
+func (a *AccountHandler) GetByEmail(ctx *fiber.Ctx) error {
+	// start span tracing
+	span, ctxTracing := opentracing.StartSpanFromContext(ctx.Context(), "AccountHandler GetByEmail")
+	defer span.Finish()
+
+	// get from params
+	email := ctx.Query("email")
+
+	// call procedure in service
+	account, err := a.AccountService.GetByEmail(ctxTracing, email)
+	if err != nil {
+		ext.Error.Set(span, true)
+
+		// error validation
+		if _, ok := err.(validator.ValidationErrors); ok {
+			statusCode := http.StatusBadRequest
+			response := dto.ApiResponse{
+				StatusCode: statusCode,
+				Status:     helper.CodeToStatus(statusCode),
+				Message:    err.Error(),
+			}
+
+			// log with tracing
+			resJson, _ := json.Marshal(&response)
+			span.LogFields(log.String("response", string(resJson)))
+
+			ctx.Status(statusCode)
+			return ctx.JSON(&response)
+		}
+
+		var statusCode int
+		switch err.(type) {
+		case *customError.BadRequestError:
+			statusCode = http.StatusBadRequest
+		case *customError.NotFoundError:
+			statusCode = http.StatusNotFound
+		case *customError.InternalServerError:
+			statusCode = http.StatusInternalServerError
+		}
+
+		// create response object
+		response := dto.ApiResponse{
+			StatusCode: statusCode,
+			Status:     helper.CodeToStatus(statusCode),
+			Message:    err.Error(),
+		}
+
+		// log with tracing
+		responseJson, _ := json.Marshal(&response)
+		span.LogFields(log.String("response", string(responseJson)))
+
+		ctx.Status(statusCode)
+		return ctx.JSON(&response)
+	}
+
+	// success
+	statusCode := http.StatusOK
+
+	// create response object
+	response := dto.ApiResponse{
+		StatusCode: statusCode,
+		Status:     helper.CodeToStatus(statusCode),
+		Message:    "success get data account",
+		Data:       account,
+	}
+
+	// log with tracing
+	responseJson, _ := json.Marshal(&response)
+	span.LogFields(log.String("response", string(responseJson)))
+
+	ctx.Status(statusCode)
+	return ctx.JSON(&response)
+}

@@ -46,3 +46,14 @@ func (a *AccountServiceMock) Update(ctx context.Context, request *dto.UpdateAcco
 
 	return value.(*dto.AccountDetailResponse), nil
 }
+
+func (a *AccountServiceMock) Login(ctx context.Context, request *dto.LoginRequest) (*dto.LoginResponse, error) {
+	args := a.Mock.Called(ctx, request)
+
+	value := args.Get(0)
+	if value == nil {
+		return nil, args.Error(1)
+	}
+
+	return value.(*dto.LoginResponse), nil
+}

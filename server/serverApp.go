@@ -16,7 +16,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"net/http"
 )
 
 type ServerApp struct {
@@ -46,37 +45,6 @@ func NewServerApp(config config.IConfig, db *sql.DB, validate *validator.Validat
 
 	// router
 	router.GenerateAccountRouter(v1, accountHandler)
-
-	// add endpoint
-	v1.Get("/test", func(ctx *fiber.Ctx) error {
-		statusCode := http.StatusOK
-		ctx.Status(statusCode)
-		return ctx.JSON(&map[string]any{
-			"status_code": statusCode,
-			"status":      "ok",
-			"message":     "success test",
-		})
-	})
-
-	v1.Get("/users", func(ctx *fiber.Ctx) error {
-		statusCode := http.StatusOK
-		ctx.Status(statusCode)
-		return ctx.JSON(&map[string]any{
-			"status_code": statusCode,
-			"status":      "ok",
-			"message":     "success get users",
-		})
-	})
-
-	v1.Get("/products", func(ctx *fiber.Ctx) error {
-		statusCode := http.StatusOK
-		ctx.Status(statusCode)
-		return ctx.JSON(&map[string]any{
-			"status_code": statusCode,
-			"status":      "ok",
-			"message":     "success get products",
-		})
-	})
 
 	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 

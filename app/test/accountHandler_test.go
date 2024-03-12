@@ -269,3 +269,214 @@ func TestAddAccountHandler(t *testing.T) {
 		assert.Equal(t, "2020-10-10 00:00:00", responseBody["data"].(map[string]any)["created_at"].(string))
 	})
 }
+
+// unit test get account by email handler
+func TestGetByEmailAccountHandler(t *testing.T) {
+	t.Run("test get account by email error validation", func(t *testing.T) {
+		accountService := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountService)
+
+		app := fiber.New()
+		app.Get("/", accountHandler.GetByEmail)
+
+		// mock
+		accountService.Mock.On("GetByEmail", mock.Anything, "reo").
+			Return(nil, validator.ValidationErrors{
+				&mockError.FieldErrorMock{
+					TagError: "email",
+					FieldErr: "email",
+				},
+			}).Times(1)
+
+		// create http request
+		request, _ := http.NewRequest(http.MethodGet, "/", nil)
+		r := request.URL.Query()
+		r.Add("email", "reo")
+		request.URL.RawQuery = r.Encode()
+
+		// receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.NotNil(t, body)
+		assert.Nil(t, err)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusBadRequest, int(responseBody["status_code"].(float64)))
+		accountService.Mock.AssertExpectations(t)
+		fmt.Println(responseBody["message"].(string))
+	})
+	t.Run("test get account by email error internal server", func(t *testing.T) {
+		accountService := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountService)
+
+		app := fiber.New()
+		app.Get("/", accountHandler.GetByEmail)
+
+		// mock
+		email := "reoshby@gmail.com"
+		errMessage := "error internal server"
+		accountService.Mock.On("GetByEmail", mock.Anything, email).
+			Return(nil, customError.NewInternalServerError(errMessage)).Times(1)
+
+		// create http request
+		request, _ := http.NewRequest(http.MethodGet, "/", nil)
+		r := request.URL.Query()
+		r.Add("email", email)
+		request.URL.RawQuery = r.Encode()
+
+		// receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusInternalServerError, response.StatusCode)
+
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.NotNil(t, body)
+		assert.Nil(t, err)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusInternalServerError, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, helper.CodeToStatus(http.StatusInternalServerError), responseBody["status"].(string))
+		assert.Equal(t, errMessage, responseBody["message"].(string))
+		accountService.Mock.AssertExpectations(t)
+	})
+	t.Run("test get account by email error bad request", func(t *testing.T) {
+		accountService := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountService)
+
+		app := fiber.New()
+		app.Get("/", accountHandler.GetByEmail)
+
+		// mock
+		email := "reoshby@gmail.com"
+		errMessage := "error bad request"
+		accountService.Mock.On("GetByEmail", mock.Anything, email).
+			Return(nil, customError.NewBadRequestError(errMessage)).Times(1)
+
+		// create http request
+		request, err := http.NewRequest(http.MethodGet, "/", nil)
+		assert.Nil(t, err)
+		r := request.URL.Query()
+		r.Add("email", email)
+		request.URL.RawQuery = r.Encode()
+
+		// receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.NotNil(t, body)
+		assert.Nil(t, err)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusBadRequest, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, helper.CodeToStatus(http.StatusBadRequest), responseBody["status"].(string))
+		assert.Equal(t, errMessage, responseBody["message"].(string))
+
+		accountService.Mock.AssertExpectations(t)
+	})
+	t.Run("test get account by email error not found", func(t *testing.T) {
+		accountService := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountService)
+
+		app := fiber.New()
+		app.Get("/", accountHandler.GetByEmail)
+
+		// mock
+		email := "reoshby@gmail.com"
+		errMessage := "record not found"
+		accountService.Mock.On("GetByEmail", mock.Anything, email).
+			Return(nil, customError.NewNotFoundError(errMessage)).Times(1)
+
+		// create http request
+		request, err := http.NewRequest(http.MethodGet, "/", nil)
+		assert.Nil(t, err)
+		assert.NotNil(t, request)
+
+		r := request.URL.Query()
+		r.Add("email", email)
+		request.URL.RawQuery = r.Encode()
+
+		// receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusNotFound, response.StatusCode)
+
+		// receive response
+		body, err := io.ReadAll(response.Body)
+		assert.Nil(t, err)
+		assert.NotNil(t, body)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusNotFound, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, helper.CodeToStatus(http.StatusNotFound), responseBody["status"].(string))
+		assert.Equal(t, errMessage, responseBody["message"].(string))
+		accountService.Mock.AssertExpectations(t)
+	})
+	t.Run("test get account by email success", func(t *testing.T) {
+		accountService := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountService)
+
+		app := fiber.New()
+		app.Get("/", accountHandler.GetByEmail)
+
+		// mock
+		email := "reoshby@gmail.com"
+		accountService.Mock.On("GetByEmail", mock.Anything, email).
+			Return(&dto.AccountDetailResponse{
+				Id:        1,
+				Email:     email,
+				Username:  "rshby",
+				Password:  "123456",
+				CreatedAt: "2020-10-10 00:00:00",
+				UpdatedAt: "2020-10-10 00:00:00",
+			}, nil).Times(1)
+
+		// create http test
+		request, err := http.NewRequest(http.MethodGet, "/", nil)
+		assert.NotNil(t, request)
+		assert.Nil(t, err)
+
+		r := request.URL.Query()
+		r.Add("email", email)
+		request.URL.RawQuery = r.Encode()
+
+		// receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.NotNil(t, body)
+		assert.Nil(t, err)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusOK, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, helper.CodeToStatus(http.StatusOK), responseBody["status"].(string))
+		assert.Equal(t, email, responseBody["data"].(map[string]any)["email"].(string))
+		assert.Equal(t, "rshby", responseBody["data"].(map[string]any)["username"].(string))
+		assert.Equal(t, "123456", responseBody["data"].(map[string]any)["password"].(string))
+	})
+}
