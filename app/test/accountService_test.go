@@ -1,14 +1,17 @@
 package test
 
 import (
+	"cobaMetrics/app/config"
 	"cobaMetrics/app/customError"
 	"cobaMetrics/app/helper"
 	"cobaMetrics/app/model/dto"
 	"cobaMetrics/app/model/entity"
 	"cobaMetrics/app/service"
+	mckConfig "cobaMetrics/app/test/mock/config"
 	mckHelper "cobaMetrics/app/test/mock/helper"
 	mck "cobaMetrics/app/test/mock/repository"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/DATA-DOG/go-sqlmock"
@@ -24,9 +27,10 @@ func TestAddUserService(t *testing.T) {
 	t.Run("add account error validate", func(t *testing.T) {
 		db, dbMock, _ := sqlmock.New()
 		validate := validator.New()
+		config := mckConfig.NewConfigMock()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
 		accountRepository := mck.NewAccountRepository()
-		accountService := service.NewAccountService(db, validate, accountRepository, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, config, accountRepository, helperPasswordMock)
 
 		// mock
 		dbMock.ExpectBegin()
@@ -56,8 +60,9 @@ func TestAddUserService(t *testing.T) {
 		db, dbMock, _ := sqlmock.New()
 		validate := validator.New()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		configMock := mckConfig.NewConfigMock()
 		accountRepositoryMock := mck.NewAccountRepository()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
 
 		// mock
 		dbMock.ExpectBegin()
@@ -86,8 +91,9 @@ func TestAddUserService(t *testing.T) {
 		db, dbMock, _ := sqlmock.New()
 		validate := validator.New()
 		helperPassword := mckHelper.NewHelperPasswordMock()
+		configMock := mckConfig.NewConfigMock()
 		accountRepositoryMock := mck.NewAccountRepository()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPassword)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPassword)
 
 		// mock
 		dbMock.ExpectBegin()
@@ -125,8 +131,9 @@ func TestAddUserService(t *testing.T) {
 
 		validate := validator.New()
 		helperPassword := mckHelper.NewHelperPasswordMock()
+		configMock := mckConfig.NewConfigMock()
 		accountRepositoryMock := mck.NewAccountRepository()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPassword)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPassword)
 
 		// mock
 		dbMock.ExpectBegin()
@@ -165,8 +172,9 @@ func TestAddUserService(t *testing.T) {
 
 		validate := validator.New()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		configMock := mckConfig.NewConfigMock()
 		accountRepositoryMock := mck.NewAccountRepository()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
 
 		// mock
 		dbMock.ExpectBegin()
@@ -206,8 +214,9 @@ func TestAddUserService(t *testing.T) {
 
 		validate := validator.New()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		configMock := mckConfig.NewConfigMock()
 		accountRepositoryMock := mck.NewAccountRepository()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
 
 		// mock
 		dbMock.ExpectBegin()
@@ -246,8 +255,9 @@ func TestAddUserService(t *testing.T) {
 
 		validate := validator.New()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		configMock := mckConfig.NewConfigMock()
 		accountRepositoryMock := mck.NewAccountRepository()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
 
 		// mock
 		dbMock.ExpectBegin()
@@ -296,8 +306,9 @@ func TestGetAccountByEmailService(t *testing.T) {
 
 		validate := validator.New()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		configMock := mckConfig.NewConfigMock()
 		accountRepositoryMock := mck.NewAccountRepository()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
 
 		// test
 		email := "reoshby"
@@ -314,8 +325,9 @@ func TestGetAccountByEmailService(t *testing.T) {
 
 		validate := validator.New()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		configMock := mckConfig.NewConfigMock()
 		accountRepositoryMock := mck.NewAccountRepository()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
 
 		// mock
 		dbMock.ExpectBegin()
@@ -341,8 +353,9 @@ func TestGetAccountByEmailService(t *testing.T) {
 
 		validate := validator.New()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		configMock := mckConfig.NewConfigMock()
 		accountRepositoryMock := mck.NewAccountRepository()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
 
 		// mock
 		dbMock.ExpectBegin()
@@ -369,8 +382,9 @@ func TestGetAccountByEmailService(t *testing.T) {
 
 		validate := validator.New()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		configMock := mckConfig.NewConfigMock()
 		accountRepositoryMock := mck.NewAccountRepository()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
 
 		// mock
 		dbMock.ExpectBegin()
@@ -397,8 +411,9 @@ func TestGetAccountByEmailService(t *testing.T) {
 
 		validate := validator.New()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		configMock := mckConfig.NewConfigMock()
 		accountRepositoryMock := mck.NewAccountRepository()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
 
 		// mock
 		dbMock.ExpectBegin()
@@ -434,8 +449,9 @@ func TestUpdateAccountService(t *testing.T) {
 
 		validate := validator.New()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		configMock := mckConfig.NewConfigMock()
 		accountRepositoryMock := mck.NewAccountRepository()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
 
 		// test
 		request := dto.UpdateAccountRequest{
@@ -464,8 +480,9 @@ func TestUpdateAccountService(t *testing.T) {
 
 		validate := validator.New()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		configMock := mckConfig.NewConfigMock()
 		accountRepositoryMock := mck.NewAccountRepository()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
 
 		// mock
 		errMessage := "cant hash password"
@@ -496,8 +513,9 @@ func TestUpdateAccountService(t *testing.T) {
 
 		validate := validator.New()
 		accountRepositoryMock := mck.NewAccountRepository()
+		configMock := mckConfig.NewConfigMock()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
 
 		// mock
 		dbMock.ExpectBegin()
@@ -534,8 +552,9 @@ func TestUpdateAccountService(t *testing.T) {
 
 		validate := validator.New()
 		accountRepositoryMock := mck.NewAccountRepository()
+		configMock := mckConfig.NewConfigMock()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
 
 		// mock
 		dbMock.ExpectBegin()
@@ -573,8 +592,9 @@ func TestUpdateAccountService(t *testing.T) {
 
 		validate := validator.New()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		configMock := mckConfig.NewConfigMock()
 		accountRepositoryMock := mck.NewAccountRepository()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
 
 		// mock
 		dbMock.ExpectBegin()
@@ -612,8 +632,9 @@ func TestUpdateAccountService(t *testing.T) {
 
 		validate := validator.New()
 		accountRepositoryMock := mck.NewAccountRepository()
+		configMock := mckConfig.NewConfigMock()
 		helperPasswordMock := mckHelper.NewHelperPasswordMock()
-		accountService := service.NewAccountService(db, validate, accountRepositoryMock, helperPasswordMock)
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
 
 		// mock
 		dbMock.ExpectBegin()
@@ -651,5 +672,169 @@ func TestUpdateAccountService(t *testing.T) {
 		assert.Equal(t, "2020-10-10 00:00:00", account.UpdatedAt)
 		helperPasswordMock.Mock.AssertExpectations(t)
 		accountRepositoryMock.Mock.AssertExpectations(t)
+	})
+}
+
+// unit test method Login
+func TestLoginAccountHandler(t *testing.T) {
+	t.Run("test login error validation", func(t *testing.T) {
+		db, _, err := sqlmock.New()
+		assert.Nil(t, err)
+
+		validate := validator.New()
+		configMock := mckConfig.NewConfigMock()
+		accountRepositoryMock := mck.NewAccountRepository()
+		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
+
+		// test
+		request := dto.LoginRequest{
+			Email:    "reo",
+			Password: "123",
+		}
+
+		login, err := accountService.Login(context.Background(), &request)
+		assert.Nil(t, login)
+		assert.NotNil(t, err)
+		assert.Error(t, err)
+
+		validationErrors, ok := err.(validator.ValidationErrors)
+		assert.True(t, ok)
+
+		for _, errorField := range validationErrors {
+			fmt.Println(fmt.Sprintf("%v", errorField.Error()))
+		}
+	})
+	t.Run("test login error account not found", func(t *testing.T) {
+		db, dbMock, err := sqlmock.New()
+		assert.Nil(t, err)
+
+		validate := validator.New()
+		configMock := mckConfig.NewConfigMock()
+		accountRepositoryMock := mck.NewAccountRepository()
+		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
+
+		// mock
+		dbMock.ExpectBegin()
+		dbMock.ExpectRollback()
+
+		errMessage := "record not found"
+		accountRepositoryMock.Mock.On("GetByEmail", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil, customError.NewNotFoundError(errMessage)).Times(1)
+
+		// test
+		request := dto.LoginRequest{
+			Email:    "reoshby@gmail.com",
+			Password: "123456",
+		}
+
+		login, err := accountService.Login(context.Background(), &request)
+		assert.Nil(t, login)
+		assert.NotNil(t, err)
+		assert.Error(t, err)
+		assert.Equal(t, errMessage, err.Error())
+
+		_, ok := err.(*customError.NotFoundError)
+		assert.True(t, ok)
+		accountRepositoryMock.Mock.AssertExpectations(t)
+	})
+	t.Run("test login error password not match", func(t *testing.T) {
+		db, dbMock, err := sqlmock.New()
+		assert.Nil(t, err)
+
+		validate := validator.New()
+		configMock := mckConfig.NewConfigMock()
+		accountRepositoryMock := mck.NewAccountRepository()
+		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
+
+		// mock
+		dbMock.ExpectBegin()
+		dbMock.ExpectRollback()
+
+		accountRepositoryMock.Mock.On("GetByEmail", mock.Anything, mock.Anything, mock.Anything).
+			Return(&entity.Account{
+				Id:        1,
+				Email:     "reoshby@gmail.com",
+				Username:  "rshby",
+				Password:  "123456",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}, nil).Times(1)
+
+		errMessage := "password not match"
+		helperPasswordMock.Mock.On("CheckPasswordHash", mock.Anything, mock.Anything).
+			Return(false).Times(1)
+
+		// test
+		request := dto.LoginRequest{
+			Email:    "reoshby@gmail.com",
+			Password: "123456",
+		}
+
+		login, err := accountService.Login(context.Background(), &request)
+		assert.Nil(t, login)
+		assert.NotNil(t, err)
+		assert.Error(t, err)
+		assert.Equal(t, errMessage, err.Error())
+
+		_, ok := err.(*customError.BadRequestError)
+		assert.True(t, ok)
+
+		accountRepositoryMock.Mock.AssertExpectations(t)
+		helperPasswordMock.Mock.AssertExpectations(t)
+	})
+	t.Run("test login success", func(t *testing.T) {
+		db, dbMock, err := sqlmock.New()
+		assert.Nil(t, err)
+
+		validate := validator.New()
+		configMock := mckConfig.NewConfigMock()
+		accountRepositoryMock := mck.NewAccountRepository()
+		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
+
+		// mock
+		dbMock.ExpectBegin()
+		dbMock.ExpectCommit()
+
+		configMock.Mock.On("Config").Return(&config.ConfigApp{
+			App:      nil,
+			Database: nil,
+			Jaeger:   nil,
+			Jwt: &config.JWT{
+				SecretKey: "sangatrahasia123",
+				Issuer:    "coba-metrics-app",
+				Subject:   "token",
+				Expired:   5,
+			},
+		}).Times(1)
+
+		accountRepositoryMock.Mock.On("GetByEmail", mock.Anything, mock.Anything, mock.Anything).
+			Return(&entity.Account{
+				Id:        0,
+				Email:     "reoshby@gmail.com",
+				Username:  "rshby",
+				Password:  "123456",
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			}, nil).Times(1)
+
+		helperPasswordMock.Mock.On("CheckPasswordHash", mock.Anything, mock.Anything).
+			Return(true).Times(1)
+
+		// test
+		request := dto.LoginRequest{
+			Email:    "reoshby@gmail.com",
+			Password: "123456",
+		}
+
+		login, err := accountService.Login(context.Background(), &request)
+		assert.Nil(t, err)
+		assert.NotNil(t, login)
+
+		loginJson, _ := json.Marshal(&login)
+		fmt.Println(string(loginJson))
 	})
 }

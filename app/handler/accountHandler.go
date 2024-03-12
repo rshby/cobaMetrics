@@ -196,3 +196,9 @@ func (a *AccountHandler) GetByEmail(ctx *fiber.Ctx) error {
 	ctx.Status(statusCode)
 	return ctx.JSON(&response)
 }
+
+// handler login
+func (a *AccountHandler) Login(ctx *fiber.Ctx) error {
+	// TODO kerjakan handler login
+	return nil
+}

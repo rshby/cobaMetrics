@@ -5,7 +5,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func GenerateAccountRouter(app fiber.Router, handler *handler.AccountHandler) {
+func GenerateAccountRouter(app fiber.Router, authMiddleware fiber.Handler, handler *handler.AccountHandler) {
 	app.Post("/account", handler.Add)
-	app.Get("/account", handler.GetByEmail)
+	app.Get("/account", authMiddleware, handler.GetByEmail)
 }

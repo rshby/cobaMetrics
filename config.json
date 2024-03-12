@@ -15,6 +15,9 @@
     "port" : 6831
   },
   "jwt": {
-    "secret_key": "sangatrahasia123"
+    "secret_key": "sangatrahasia123",
+    "issuer" : "coba-metrics-app",
+    "subject" : "token",
+    "expired" : 5
   }
 }

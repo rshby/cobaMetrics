@@ -32,7 +32,7 @@ func NewServerApp(config config.IConfig, db *sql.DB, validate *validator.Validat
 	accountRepository := repository.NewAccountRepository()
 
 	// register service
-	accountService := service.NewAccountService(db, validate, accountRepository, helper.NewHelperPassword())
+	accountService := service.NewAccountService(db, validate, config, accountRepository, helper.NewHelperPassword())
 
 	// register handler
 	accountHandler := handler.NewAccountHandler(accountService)
@@ -40,11 +40,13 @@ func NewServerApp(config config.IConfig, db *sql.DB, validate *validator.Validat
 	// create instance fiber
 	app := fiber.New()
 
+	authMiddleware := middleware.AuthMiddleware(config)
+
 	v1 := app.Group("/api/v1")
 	v1.Use(middleware.MetricsMiddleware(config, metrics))
 
 	// router
-	router.GenerateAccountRouter(v1, accountHandler)
+	router.GenerateAccountRouter(v1, authMiddleware, accountHandler)
 
 	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 

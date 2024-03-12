@@ -24,6 +24,9 @@ type Jaeger struct {
 
 type JWT struct {
 	SecretKey string `json:"secret_key,omitempty"`
+	Issuer    string `json:"issuer,omitempty"`
+	Subject   string `json:"subject,omitempty"`
+	Expired   int    `json:"expired,omitempty"`
 }
 
 type ConfigApp struct {
@@ -53,7 +56,12 @@ func NewConfigApp() IConfig {
 			Host:        viper.GetString("jaeger.host"),
 			Port:        viper.GetInt("jaeger.port"),
 		},
-		Jwt: &JWT{SecretKey: viper.GetString("jwt.secret_key")},
+		Jwt: &JWT{
+			SecretKey: viper.GetString("jwt.secret_key"),
+			Issuer:    viper.GetString("jwt.issuer"),
+			Subject:   viper.GetString("jwt.subject"),
+			Expired:   viper.GetInt("jwt.expired"),
+		},
 	}
 
 	return &cfg

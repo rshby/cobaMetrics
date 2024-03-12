@@ -1,16 +1,19 @@
 package service
 
 import (
+	"cobaMetrics/app/config"
 	"cobaMetrics/app/customError"
 	"cobaMetrics/app/helper"
 	"cobaMetrics/app/model/dto"
 	"cobaMetrics/app/model/entity"
+	jwtModel "cobaMetrics/app/model/jwt"
 	IRepo "cobaMetrics/app/repository/interface"
 	IService "cobaMetrics/app/service/interface"
 	"context"
 	"database/sql"
 	"encoding/json"
 	"github.com/go-playground/validator/v10"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
@@ -22,12 +25,14 @@ type AccountService struct {
 	Validate       *validator.Validate
 	AccRepo        IRepo.IAccountRepository
 	HelperPassword helper.IHelperPassword
+	Config         config.IConfig
 }
 
-func NewAccountService(db *sql.DB, validate *validator.Validate, accRepo IRepo.IAccountRepository, helperPassword helper.IHelperPassword) IService.IAccountService {
+func NewAccountService(db *sql.DB, validate *validator.Validate, config config.IConfig, accRepo IRepo.IAccountRepository, helperPassword helper.IHelperPassword) IService.IAccountService {
 	return &AccountService{
 		DB:             db,
 		Validate:       validate,
+		Config:         config,
 		AccRepo:        accRepo,
 		HelperPassword: helperPassword,
 	}
@@ -212,6 +217,73 @@ func (a *AccountService) Update(ctx context.Context, request *dto.UpdateAccountR
 
 // implementasi method Login
 func (a *AccountService) Login(ctx context.Context, request *dto.LoginRequest) (*dto.LoginResponse, error) {
-	//TODO kerjakan method login
-	panic("implement me")
+	// start span tracing
+	span, ctxTracing := opentracing.StartSpanFromContext(ctx, "AccountService Login")
+	defer span.Finish()
+
+	// logging with tracing
+	requestJson, _ := json.Marshal(&request)
+	span.LogFields(log.String("request", string(requestJson)))
+
+	// validate
+	if err := a.Validate.Struct(*request); err != nil {
+		ext.Error.Set(span, true)
+		span.LogFields(log.String("response", err.Error()))
+		return nil, err
+	}
+
+	// start transaction
+	tx, _ := a.DB.Begin()
+	defer tx.Rollback()
+
+	// cek email
+	account, err := a.AccRepo.GetByEmail(ctxTracing, tx, request.Email)
+	if err != nil {
+		errMessage := "record not found"
+		ext.Error.Set(span, true)
+		span.LogFields(log.String("response", errMessage))
+		return nil, customError.NewNotFoundError(errMessage)
+	}
+
+	// check password
+	if isValid := a.HelperPassword.CheckPasswordHash(request.Password, account.Password); !isValid {
+		errMessage := "password not match"
+		ext.Error.Set(span, true)
+		span.LogFields(log.String("response", errMessage))
+		return nil, customError.NewBadRequestError(errMessage)
+	}
+
+	// create token
+	jwtConfig := a.Config.Config().Jwt
+	claims := jwtModel.Claims{
+		Email: account.Email,
+		RegisteredClaims: &jwt.RegisteredClaims{
+			Issuer:    jwtConfig.Issuer,
+			Subject:   jwtConfig.Subject,
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+
+	tokenWithClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, &claims)
+	token, err := tokenWithClaims.SignedString([]byte(jwtConfig.SecretKey))
+	if err != nil {
+		span.LogFields(log.String("response", err.Error()))
+		ext.Error.Set(span, true)
+		return nil, customError.NewInternalServerError(err.Error())
+	}
+
+	// success create Token
+	// create response
+	response := dto.LoginResponse{
+		Token:     token,
+		CreatedAt: helper.DateToString(time.Now()),
+	}
+
+	// log with tracing
+	responseJson, _ := json.Marshal(&response)
+	span.LogFields(log.String("response", string(responseJson)))
+
+	tx.Commit()
+	return &response, nil
 }
