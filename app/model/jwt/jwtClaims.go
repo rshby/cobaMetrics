@@ -3,8 +3,8 @@ package jwt
 import "github.com/golang-jwt/jwt/v5"
 
 type Claims struct {
-	Email            string                `json:"email,omitempty"`
-	RegisteredClaims *jwt.RegisteredClaims `json:"registered_claims,omitempty"`
+	Email            string               `json:"email,omitempty"`
+	RegisteredClaims jwt.RegisteredClaims `json:"registered_claims"`
 }
 
 func (c *Claims) GetExpirationTime() (*jwt.NumericDate, error) {

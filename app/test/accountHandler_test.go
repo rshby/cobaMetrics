@@ -18,6 +18,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 )
 
 // unit test add account handler
@@ -686,5 +687,50 @@ func TestLoginAccountHandler(t *testing.T) {
 		assert.Equal(t, helper.CodeToStatus(http.StatusInternalServerError), responseBody["status"].(string))
 		assert.Equal(t, errMessage, responseBody["message"].(string))
 		accontServiceMock.Mock.AssertExpectations(t)
+	})
+	t.Run("test login success", func(t *testing.T) {
+		accountServiceMock := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountServiceMock)
+
+		app := fiber.New()
+		app.Post("/", accountHandler.Login)
+
+		// mock
+		accountServiceMock.Mock.On("Login", mock.Anything, mock.Anything).
+			Return(&dto.LoginResponse{
+				Token:     "qwertyuiop",
+				CreatedAt: time.Now().Format("2006-01-02 15:04:05"),
+			}).Times(1)
+
+		// create request body
+		req := dto.LoginRequest{
+			Email:    "reoshby@gmail.com",
+			Password: "123456",
+		}
+
+		reqJson, _ := json.Marshal(&req)
+
+		// create http request
+		request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(string(reqJson)))
+		request.Header.Add("Content-Type", "application/json")
+
+		// receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.Nil(t, err)
+		assert.NotNil(t, body)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusOK, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, helper.CodeToStatus(http.StatusOK), responseBody["status"].(string))
+		accountServiceMock.Mock.AssertExpectations(t)
+		fmt.Println(responseBody["data"].(map[string]any))
 	})
 }

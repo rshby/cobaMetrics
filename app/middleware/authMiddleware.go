@@ -31,14 +31,34 @@ func AuthMiddleware(config config.IConfig) fiber.Handler {
 
 		// get token
 		tokenHeader := ctx.Get("authorization")
+
+		if tokenHeader == "" {
+			statusCode := http.StatusUnauthorized
+			response := dto.ApiResponse{
+				StatusCode: statusCode,
+				Status:     helper.CodeToStatus(statusCode),
+				Message:    "token required",
+			}
+
+			responseJson, _ := json.Marshal(&response)
+			span.LogFields(log.String("response", string(responseJson)))
+			ext.Error.Set(span, true)
+
+			ctx.Status(statusCode)
+			return ctx.JSON(&response)
+		}
+
 		tokenString := strings.Split(tokenHeader, " ")
 		var token string = tokenString[1]
 
 		// decode claims
-		var claims *jwtModel.Claims
-		tokenWithClaims, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
+		var claims jwtModel.Claims
+		tokenWithClaims, err := jwt.ParseWithClaims(token, &claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte(jwtConfig.SecretKey), nil
 		})
+
+		claimsJson, _ := json.Marshal(&claims)
+		span.LogFields(log.String("claims", string(claimsJson)))
 
 		// if token not valid
 		if err != nil {
@@ -59,26 +79,22 @@ func AuthMiddleware(config config.IConfig) fiber.Handler {
 			return ctx.JSON(&response)
 		}
 
-		// if error claims
-		if _, ok := tokenWithClaims.Claims.(*jwtModel.Claims); !ok {
-			ext.Error.Set(span, true)
-
+		// if not valid at all
+		if !tokenWithClaims.Valid {
 			statusCode := http.StatusUnauthorized
-			errMessage := "claims not valid"
 			response := dto.ApiResponse{
 				StatusCode: statusCode,
 				Status:     helper.CodeToStatus(statusCode),
-				Message:    errMessage,
+				Message:    "token not valid",
 			}
 
 			responseJson, _ := json.Marshal(&response)
 			span.LogFields(log.String("response", string(responseJson)))
+			ext.Error.Set(span, true)
 
 			ctx.Status(statusCode)
 			return ctx.JSON(&response)
 		}
-
-		// if not valid at all
 
 		// lolos semua validasi auth
 		ctx.Next()

@@ -20,6 +20,8 @@ services:
       - MYSQL_ROOT_PASSWORD=root
     networks:
       - cobaMetrics-network
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
 
   jaeger:
     image: jaegertracing/all-in-one

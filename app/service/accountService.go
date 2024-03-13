@@ -257,10 +257,10 @@ func (a *AccountService) Login(ctx context.Context, request *dto.LoginRequest) (
 	jwtConfig := a.Config.Config().Jwt
 	claims := jwtModel.Claims{
 		Email: account.Email,
-		RegisteredClaims: &jwt.RegisteredClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    jwtConfig.Issuer,
 			Subject:   jwtConfig.Subject,
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(5 * time.Minute)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(10 * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
