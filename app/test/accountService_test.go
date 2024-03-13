@@ -676,7 +676,7 @@ func TestUpdateAccountService(t *testing.T) {
 }
 
 // unit test method Login
-func TestLoginAccountHandler(t *testing.T) {
+func TestLoginAccountService(t *testing.T) {
 	t.Run("test login error validation", func(t *testing.T) {
 		db, _, err := sqlmock.New()
 		assert.Nil(t, err)

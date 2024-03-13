@@ -480,3 +480,211 @@ func TestGetByEmailAccountHandler(t *testing.T) {
 		assert.Equal(t, "123456", responseBody["data"].(map[string]any)["password"].(string))
 	})
 }
+
+// unit test handler login
+func TestLoginAccountHandler(t *testing.T) {
+	t.Run("test login error nil request body", func(t *testing.T) {
+		accountServiceMock := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountServiceMock)
+
+		app := fiber.New()
+		app.Post("/", accountHandler.Login)
+
+		// test
+		// create request body
+		request := httptest.NewRequest(http.MethodPost, "/", nil)
+		request.Header.Add("Content-Type", "application/json")
+
+		// receive response
+		response, err := app.Test(request)
+		assert.NotNil(t, response)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.NotNil(t, body)
+		assert.Nil(t, err)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusBadRequest, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, helper.CodeToStatus(http.StatusBadRequest), responseBody["status"].(string))
+	})
+	t.Run("test login error validation", func(t *testing.T) {
+		accountServiceMock := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountServiceMock)
+
+		app := fiber.New()
+		app.Post("/", accountHandler.Login)
+
+		// mock
+		accountServiceMock.Mock.On("Login", mock.Anything, mock.Anything).
+			Return(nil, validator.ValidationErrors{
+				&mockError.FieldErrorMock{TagError: "email", FieldErr: "email"},
+				&mockError.FieldErrorMock{TagError: "min", FieldErr: "password"},
+			}).Times(1)
+
+		// create request body
+		req := dto.LoginRequest{
+			Email:    "reo",
+			Password: "123",
+		}
+
+		reqJson, _ := json.Marshal(&req)
+
+		// create http request
+		request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(string(reqJson)))
+		request.Header.Add("Content-Type", "application/json")
+
+		// receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.Nil(t, err)
+		assert.NotNil(t, body)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusBadRequest, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, helper.CodeToStatus(http.StatusBadRequest), responseBody["status"].(string))
+		accountServiceMock.Mock.AssertExpectations(t)
+	})
+	t.Run("test login error bad request", func(t *testing.T) {
+		accountServiceMock := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountServiceMock)
+
+		app := fiber.New()
+		app.Post("/", accountHandler.Login)
+
+		// mock
+		errMessage := "error bad request"
+		accountServiceMock.Mock.On("Login", mock.Anything, mock.Anything).
+			Return(nil, customError.NewBadRequestError(errMessage)).Times(1)
+
+		// test
+		// create request body
+		req := dto.LoginRequest{
+			Email:    "reoshby@gmail.com",
+			Password: "123456",
+		}
+
+		reqJson, _ := json.Marshal(&req)
+
+		// create http request
+		request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(string(reqJson)))
+		request.Header.Add("Content-Type", "application/json")
+
+		// receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.Nil(t, err)
+		assert.NotNil(t, body)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusBadRequest, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, helper.CodeToStatus(http.StatusBadRequest), responseBody["status"].(string))
+		assert.Equal(t, errMessage, responseBody["message"].(string))
+	})
+	t.Run("test login error not found", func(t *testing.T) {
+		accountServiceMock := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountServiceMock)
+
+		app := fiber.New()
+		app.Post("/", accountHandler.Login)
+
+		// mock
+		errMessage := "record not found"
+		accountServiceMock.Mock.On("Login", mock.Anything, mock.Anything).
+			Return(nil, customError.NewNotFoundError(errMessage)).Times(1)
+
+		// test
+		// create request body
+		req := dto.LoginRequest{
+			Email:    "reoshby@gmail.com",
+			Password: "123456",
+		}
+
+		reqJson, _ := json.Marshal(&req)
+
+		// create http request
+		request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(string(reqJson)))
+		request.Header.Add("Content-Type", "application/json")
+
+		// receive response
+		response, err := app.Test(request)
+		assert.NotNil(t, response)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusNotFound, response.StatusCode)
+
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.Nil(t, err)
+		assert.NotNil(t, body)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusNotFound, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, helper.CodeToStatus(http.StatusNotFound), responseBody["status"].(string))
+		assert.Equal(t, errMessage, responseBody["message"].(string))
+		accountServiceMock.Mock.AssertExpectations(t)
+	})
+	t.Run("test login error internal server", func(t *testing.T) {
+		accontServiceMock := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accontServiceMock)
+
+		app := fiber.New()
+		app.Post("/", accountHandler.Login)
+
+		// mock
+		errMessage := "error internal server"
+		accontServiceMock.Mock.On("Login", mock.Anything, mock.Anything).
+			Return(nil, customError.NewInternalServerError(errMessage)).Times(1)
+
+		// test
+		// create request body
+		req := dto.LoginRequest{
+			Email:    "reoshby@gmail.com",
+			Password: "123456",
+		}
+
+		reqJson, _ := json.Marshal(&req)
+
+		// create http request
+		request := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(string(reqJson)))
+		request.Header.Add("Content-Type", "application/json")
+
+		// receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusInternalServerError, response.StatusCode)
+
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.Nil(t, err)
+		assert.NotNil(t, body)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusInternalServerError, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, helper.CodeToStatus(http.StatusInternalServerError), responseBody["status"].(string))
+		assert.Equal(t, errMessage, responseBody["message"].(string))
+		accontServiceMock.Mock.AssertExpectations(t)
+	})
+}
