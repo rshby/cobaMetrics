@@ -123,6 +123,54 @@ func (a *AccountRepository) DeleteByEmail(ctx context.Context, tx *sql.Tx, email
 }
 
 func (a *AccountRepository) GetAll(ctx context.Context, tx *sql.Tx, limit int, offset int) ([]entity.Account, error) {
-	//TODO implement me
-	panic("implement me")
+	// start tracing
+	span, ctxTracing := opentracing.StartSpanFromContext(ctx, "AccountRepository GetAll")
+	defer span.Finish()
+
+	// log with tracing
+	req := map[string]int{
+		"limit":  limit,
+		"offset": offset,
+	}
+
+	reqJson, _ := json.Marshal(&req)
+	span.LogFields(log.String("request", string(reqJson)))
+
+	// query
+	rows, err := tx.QueryContext(ctxTracing, "SELECT id, email, username, password, created_at, updated_at FROM accounts ORDER BY accounts.id LIMIT ? OFFSET ?", limit, offset)
+	if err != nil {
+		// log error
+		span.LogFields(log.String("response", err.Error()))
+		return nil, customError.NewInternalServerError(err.Error())
+	}
+
+	if rows.Err() != nil {
+		// log with tracing
+		span.LogFields(log.String("response", rows.Err().Error()))
+		return nil, customError.NewInternalServerError(rows.Err().Error())
+	}
+
+	var accounts []entity.Account
+	for rows.Next() {
+		var account entity.Account
+		if err = rows.Scan(&account.Id, &account.Email, &account.Username, &account.Password, &account.CreatedAt, &account.UpdatedAt); err != nil {
+			span.LogFields(log.String("response", err.Error()))
+
+			// if error not found data
+			if err == sql.ErrNoRows {
+				return nil, customError.NewNotFoundError(err.Error())
+			}
+
+			return nil, customError.NewInternalServerError(err.Error())
+		}
+
+		// append to accounts
+		accounts = append(accounts, account)
+	}
+
+	// log response with tracing
+	resJson, _ := json.Marshal(&accounts)
+	span.LogFields(log.String("response", string(resJson)))
+
+	return accounts, nil
 }

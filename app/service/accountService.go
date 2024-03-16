@@ -17,6 +17,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
+	"sync"
 	"time"
 )
 
@@ -286,4 +287,56 @@ func (a *AccountService) Login(ctx context.Context, request *dto.LoginRequest) (
 
 	tx.Commit()
 	return &response, nil
+}
+
+// implementasi method GetAll
+func (a *AccountService) GetAll(ctx context.Context, limit int, page int) ([]dto.AccountDetailResponse, error) {
+	// start span tracing
+	span, ctxTracing := opentracing.StartSpanFromContext(ctx, "AccountService GetAll")
+	defer span.Finish()
+
+	// log request
+	req := map[string]int{
+		"limit": limit,
+		"page":  page,
+	}
+	reqJson, _ := json.Marshal(&req)
+	span.LogFields(log.String("request", string(reqJson)))
+
+	// create transaction
+	tx, _ := a.DB.BeginTx(ctxTracing, nil)
+
+	// call procedure GetAll in repository
+	offset := (limit * page) - limit
+	accounts, err := a.AccRepo.GetAll(ctxTracing, tx, limit, offset)
+	if err != nil {
+		span.LogFields(log.String("response", err.Error()))
+		return nil, err
+	}
+
+	var response []dto.AccountDetailResponse
+
+	wg := &sync.WaitGroup{}
+	for _, account := range accounts {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, acc entity.Account) {
+			defer wg.Done()
+			response = append(response, dto.AccountDetailResponse{
+				Id:        acc.Id,
+				Email:     acc.Email,
+				Username:  acc.Username,
+				Password:  acc.Password,
+				CreatedAt: helper.DateToString(acc.CreatedAt),
+				UpdatedAt: helper.DateToString(acc.UpdatedAt),
+			})
+		}(wg, account)
+	}
+
+	wg.Wait()
+
+	// log response
+	resJson, _ := json.Marshal(&response)
+	span.LogFields(log.String("response", string(resJson)))
+
+	return response, nil
 }

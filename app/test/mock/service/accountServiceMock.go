@@ -57,3 +57,14 @@ func (a *AccountServiceMock) Login(ctx context.Context, request *dto.LoginReques
 
 	return value.(*dto.LoginResponse), nil
 }
+
+func (a *AccountServiceMock) GetAll(ctx context.Context, limit int, page int) ([]dto.AccountDetailResponse, error) {
+	args := a.Mock.Called(ctx, limit, page)
+
+	value := args.Get(0)
+	if value == nil {
+		return nil, args.Error(1)
+	}
+
+	return value.([]dto.AccountDetailResponse), nil
+}

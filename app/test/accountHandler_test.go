@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -733,4 +734,27 @@ func TestLoginAccountHandler(t *testing.T) {
 		accountServiceMock.Mock.AssertExpectations(t)
 		fmt.Println(responseBody["data"].(map[string]any))
 	})
+}
+
+func TestGoroutine(t *testing.T) {
+
+	var words = []string{"satu", "dua", "tiga", "empat"}
+
+	var response []string
+
+	wg := &sync.WaitGroup{}
+	for _, word := range words {
+		wg.Add(1)
+		go func(wg *sync.WaitGroup, word string) {
+			defer wg.Done()
+
+			fmt.Println(word)
+			response = append(response, word)
+		}(wg, word)
+	}
+
+	wg.Wait()
+
+	fmt.Println("selesai")
+	fmt.Println(response)
 }
