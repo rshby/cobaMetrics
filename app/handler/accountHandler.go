@@ -13,6 +13,7 @@ import (
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/opentracing/opentracing-go/log"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -292,5 +293,103 @@ func (a *AccountHandler) Login(ctx *fiber.Ctx) error {
 	responseJson, _ := json.Marshal(&response)
 	span.LogFields(log.String("response", string(responseJson)))
 
+	return ctx.JSON(&response)
+}
+
+// handler GetAll accounts
+func (a *AccountHandler) GetAll(ctx *fiber.Ctx) error {
+	// start tracing
+	span, ctxTracing := opentracing.StartSpanFromContext(ctx.Context(), "AccountHandler GetAll")
+	defer span.Finish()
+
+	// get query page and limit
+	pageString := ctx.Query("page", "1")
+	limitString := ctx.Query("limit", "10")
+
+	page, err := strconv.Atoi(pageString)
+	if err != nil {
+		ext.Error.Set(span, true)
+		statusCode := http.StatusBadRequest
+		response := dto.ApiResponse{
+			StatusCode: statusCode,
+			Status:     helper.CodeToStatus(statusCode),
+			Message:    "query page must be numeric",
+		}
+
+		resJson, _ := json.Marshal(&response)
+		span.LogFields(log.String("response", string(resJson)))
+
+		ctx.Status(statusCode)
+		return ctx.JSON(&response)
+	}
+
+	limit, err := strconv.Atoi(limitString)
+	if err != nil {
+		ext.Error.Set(span, true)
+		statusCode := http.StatusBadRequest
+		response := dto.ApiResponse{
+			StatusCode: statusCode,
+			Status:     helper.CodeToStatus(statusCode),
+			Message:    "query limit must be numeric",
+		}
+
+		resJson, _ := json.Marshal(&response)
+		span.LogFields(log.String("response", string(resJson)))
+
+		ctx.Status(statusCode)
+		return ctx.JSON(&response)
+	}
+
+	// log request with span
+	req := map[string]any{
+		"page":  page,
+		"limit": limit,
+	}
+	reqJson, _ := json.Marshal(&req)
+	span.LogFields(log.String("request", string(reqJson)))
+
+	// call procedure GetAll in service
+	accounts, err := a.AccountService.GetAll(ctxTracing, limit, page)
+	if err != nil {
+		var statusCode int
+		switch err.(type) {
+		case *customError.NotFoundError:
+			statusCode = http.StatusNotFound
+		case *customError.BadRequestError:
+			statusCode = http.StatusBadRequest
+		default:
+			statusCode = http.StatusInternalServerError
+		}
+
+		ext.Error.Set(span, true)
+		response := dto.ApiResponse{
+			StatusCode: statusCode,
+			Status:     helper.CodeToStatus(statusCode),
+			Message:    err.Error(),
+		}
+		resJson, _ := json.Marshal(&response)
+		span.LogFields(log.String("response", string(resJson)))
+
+		ctx.Status(statusCode)
+		return ctx.JSON(&response)
+	}
+
+	// success get data accounts
+	statusCode := http.StatusOK
+	response := dto.ApiResponse{
+		StatusCode: statusCode,
+		Status:     helper.CodeToStatus(statusCode),
+		Message:    "success get data",
+		Data: map[string]any{
+			"page":  page,
+			"count": len(accounts),
+			"data":  accounts,
+		},
+	}
+
+	resJson, _ := json.Marshal(&response)
+	span.LogFields(log.String("response", string(resJson)))
+
+	ctx.Status(statusCode)
 	return ctx.JSON(&response)
 }

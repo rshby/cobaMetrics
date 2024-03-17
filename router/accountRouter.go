@@ -9,4 +9,5 @@ func GenerateAccountRouter(app fiber.Router, authMiddleware fiber.Handler, handl
 	app.Post("/account", handler.Add)
 	app.Get("/account", authMiddleware, handler.GetByEmail)
 	app.Post("/login", handler.Login)
+	app.Get("/accounts", authMiddleware, handler.GetAll)
 }

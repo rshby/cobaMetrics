@@ -892,4 +892,45 @@ func TestGetAllAccountService(t *testing.T) {
 		assert.Equal(t, errMessage, err.Error())
 		accountRepositoryMock.Mock.AssertExpectations(t)
 	})
+	t.Run("test get all accounts success", func(t *testing.T) {
+		db, dbMock, err := sqlmock.New()
+		assert.Nil(t, err)
+
+		validate := validator.New()
+		configMock := mckConfig.NewConfigMock()
+		accountRepositoryMock := mck.NewAccountRepository()
+		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
+
+		// mock
+		dbMock.ExpectBegin()
+		dbMock.ExpectCommit()
+
+		accountRepositoryMock.Mock.On("GetAll", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return([]entity.Account{
+				{
+					Id:        1,
+					Email:     "reoshby@gmail.com",
+					Username:  "rshby",
+					Password:  "123456",
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+				{
+					Id:        2,
+					Email:     "reoshby2@gmail.com",
+					Username:  "rshby2",
+					Password:  "123456",
+					CreatedAt: time.Now(),
+					UpdatedAt: time.Now(),
+				},
+			}, nil).Times(1)
+
+		// test
+		accounts, err := accountService.GetAll(context.Background(), 2, 1)
+		assert.Nil(t, err)
+		assert.NotNil(t, accounts)
+		assert.Equal(t, 2, len(accounts))
+		accountRepositoryMock.Mock.AssertExpectations(t)
+	})
 }

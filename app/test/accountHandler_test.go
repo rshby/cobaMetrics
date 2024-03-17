@@ -17,7 +17,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 )
@@ -736,25 +735,74 @@ func TestLoginAccountHandler(t *testing.T) {
 	})
 }
 
-func TestGoroutine(t *testing.T) {
+// unit test get all account
+func TestGetAllAccountHandler(t *testing.T) {
+	t.Run("test get all account error page must numeric", func(t *testing.T) {
+		accountServiceMock := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountServiceMock)
 
-	var words = []string{"satu", "dua", "tiga", "empat"}
+		app := fiber.New()
+		app.Get("/", accountHandler.GetAll)
 
-	var response []string
+		// test
+		// create http requset
+		request, err := http.NewRequest(http.MethodGet, "/", nil)
+		assert.Nil(t, err)
 
-	wg := &sync.WaitGroup{}
-	for _, word := range words {
-		wg.Add(1)
-		go func(wg *sync.WaitGroup, word string) {
-			defer wg.Done()
+		r := request.URL.Query()
+		r.Add("page", "a")
+		request.URL.RawQuery = r.Encode()
 
-			fmt.Println(word)
-			response = append(response, word)
-		}(wg, word)
-	}
+		// receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusBadRequest, response.StatusCode)
 
-	wg.Wait()
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.Nil(t, err)
 
-	fmt.Println("selesai")
-	fmt.Println(response)
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusBadRequest, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, helper.CodeToStatus(http.StatusBadRequest), responseBody["status"].(string))
+		assert.Equal(t, "query page must be numeric", responseBody["message"].(string))
+	})
+	t.Run("test get all accounts error limit must be numeric", func(t *testing.T) {
+		accountService := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountService)
+
+		app := fiber.New()
+		app.Get("/", accountHandler.GetAll)
+
+		// test
+		// create http request
+		request, err := http.NewRequest(http.MethodGet, "/", nil)
+		assert.Nil(t, err)
+		assert.NotNil(t, request)
+
+		r := request.URL.Query()
+		r.Add("limit", "a")
+		request.URL.RawQuery = r.Encode()
+
+		// receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.Nil(t, err)
+		assert.NotNil(t, body)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusBadRequest, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, helper.CodeToStatus(http.StatusBadRequest), responseBody["status"].(string))
+		assert.Equal(t, "query limit must be numeric", responseBody["message"].(string))
+	})
 }
