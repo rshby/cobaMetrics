@@ -805,4 +805,173 @@ func TestGetAllAccountHandler(t *testing.T) {
 		assert.Equal(t, helper.CodeToStatus(http.StatusBadRequest), responseBody["status"].(string))
 		assert.Equal(t, "query limit must be numeric", responseBody["message"].(string))
 	})
+	t.Run("test get all accounts error not found", func(t *testing.T) {
+		accountService := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountService)
+
+		app := fiber.New()
+		app.Get("/", accountHandler.GetAll)
+
+		// mock
+		errMessage := "record not found"
+		accountService.Mock.On("GetAll", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil, customError.NewNotFoundError(errMessage)).Times(1)
+
+		// test
+		// create http request
+		request, err := http.NewRequest(http.MethodGet, "/", nil)
+		assert.NotNil(t, request)
+		assert.Nil(t, err)
+
+		r := request.URL.Query()
+		r.Add("page", "1")
+		r.Add("limit", "2")
+		request.URL.RawQuery = r.Encode()
+
+		// receive response
+		response, err := app.Test(request)
+		assert.NotNil(t, response)
+		assert.Nil(t, err)
+		assert.Equal(t, http.StatusNotFound, response.StatusCode)
+
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.NotNil(t, body)
+		assert.Nil(t, err)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusNotFound, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, helper.CodeToStatus(http.StatusNotFound), responseBody["status"].(string))
+		assert.Equal(t, errMessage, responseBody["message"].(string))
+		accountService.Mock.AssertExpectations(t)
+	})
+	t.Run("test get all accounts error bad request", func(t *testing.T) {
+		accountService := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountService)
+
+		app := fiber.New()
+		app.Get("/", accountHandler.GetAll)
+
+		// mock
+		errMessage := "error bad request"
+		accountService.Mock.On("GetAll", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil, customError.NewBadRequestError(errMessage)).Times(1)
+
+		// test
+		// create http request
+		request, err := http.NewRequest(http.MethodGet, "/", nil)
+		assert.Nil(t, err)
+		assert.NotNil(t, request)
+
+		r := request.URL.Query()
+		r.Add("page", "1")
+		r.Add("limit", "2")
+		request.URL.RawQuery = r.Encode()
+
+		// receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.NotNil(t, body)
+		assert.Nil(t, err)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusBadRequest, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, helper.CodeToStatus(http.StatusBadRequest), responseBody["status"].(string))
+		assert.Equal(t, errMessage, responseBody["message"].(string))
+		accountService.Mock.AssertExpectations(t)
+	})
+	t.Run("test get all accounts error internal server error", func(t *testing.T) {
+		accountServiceMock := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountServiceMock)
+
+		app := fiber.New()
+		app.Get("/", accountHandler.GetAll)
+
+		// mock
+		errMessage := "error internal server error"
+		accountServiceMock.Mock.On("GetAll", mock.Anything, mock.Anything, mock.Anything).
+			Return(nil, customError.NewInternalServerError(errMessage)).Times(1)
+
+		// test
+		// create request
+		request, err := http.NewRequest(http.MethodGet, "/", nil)
+		assert.NotNil(t, request)
+		assert.Nil(t, err)
+
+		r := request.URL.Query()
+		r.Add("page", "1")
+		r.Add("limit", "2")
+		request.URL.RawQuery = r.Encode()
+
+		// receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusInternalServerError, response.StatusCode)
+
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.Nil(t, err)
+		assert.NotNil(t, body)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusInternalServerError, int(responseBody["status_code"].(float64)))
+		assert.Equal(t, helper.CodeToStatus(http.StatusInternalServerError), responseBody["status"].(string))
+		assert.Equal(t, errMessage, responseBody["message"].(string))
+		accountServiceMock.Mock.AssertExpectations(t)
+	})
+	t.Run("test get all accounts success", func(t *testing.T) {
+		accountService := mockService.NewAccountServiceMock()
+		accountHandler := handler.NewAccountHandler(accountService)
+
+		app := fiber.New()
+		app.Get("/", accountHandler.GetAll)
+
+		// mock
+		accountService.Mock.On("GetAll", mock.Anything, mock.Anything, mock.Anything).
+			Return([]dto.AccountDetailResponse{
+				{
+					Id:        1,
+					Email:     "reoshby@gmail.com",
+					Username:  "rshby",
+					Password:  "123456",
+					CreatedAt: "2020-10-10 00:00:00",
+					UpdatedAt: "2020-10-10 00:00:00",
+				},
+			}, nil).Times(1)
+
+		// test
+		// create request
+		request, err := http.NewRequest(http.MethodGet, "/", nil)
+		assert.NotNil(t, request)
+		assert.Nil(t, err)
+
+		// receive response
+		response, err := app.Test(request)
+		assert.Nil(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, http.StatusOK, response.StatusCode)
+
+		// receive response body
+		body, err := io.ReadAll(response.Body)
+		assert.NotNil(t, body)
+		assert.Nil(t, err)
+
+		responseBody := map[string]any{}
+		json.Unmarshal(body, &responseBody)
+
+		assert.Equal(t, http.StatusOK, int(responseBody["status_code"].(float64)))
+		accountService.Mock.AssertExpectations(t)
+	})
 }
