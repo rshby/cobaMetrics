@@ -305,6 +305,7 @@ func (a *AccountService) GetAll(ctx context.Context, limit int, page int) ([]dto
 
 	// create transaction
 	tx, _ := a.DB.BeginTx(ctxTracing, nil)
+	defer tx.Rollback()
 
 	// call procedure GetAll in repository
 	offset := (limit * page) - limit
@@ -338,5 +339,6 @@ func (a *AccountService) GetAll(ctx context.Context, limit int, page int) ([]dto
 	resJson, _ := json.Marshal(&response)
 	span.LogFields(log.String("response", string(resJson)))
 
+	tx.Commit()
 	return response, nil
 }

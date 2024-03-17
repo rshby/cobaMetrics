@@ -55,6 +55,12 @@ func (a *AccountRepositoryMock) DeleteByEmail(ctx context.Context, tx *sql.Tx, e
 }
 
 func (a *AccountRepositoryMock) GetAll(ctx context.Context, tx *sql.Tx, limit int, offset int) ([]entity.Account, error) {
-	//TODO implement me
-	panic("implement me")
+	args := a.Mock.Called(ctx, tx, limit, offset)
+
+	value := args.Get(0)
+	if value == nil {
+		return nil, args.Error(1)
+	}
+
+	return value.([]entity.Account), nil
 }

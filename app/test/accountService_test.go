@@ -838,3 +838,58 @@ func TestLoginAccountService(t *testing.T) {
 		fmt.Println(string(loginJson))
 	})
 }
+
+func TestGetAllAccountService(t *testing.T) {
+	t.Run("test get all accounts error internal server", func(t *testing.T) {
+		db, dbMock, err := sqlmock.New()
+		assert.Nil(t, err)
+
+		validate := validator.New()
+		configMock := mckConfig.NewConfigMock()
+		accountRepositoryMock := mck.NewAccountRepository()
+		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
+
+		// mock
+		dbMock.ExpectBegin()
+		dbMock.ExpectRollback()
+
+		errMessage := "database refused"
+		accountRepositoryMock.Mock.On("GetAll", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(nil, customError.NewInternalServerError(errMessage)).Times(1)
+
+		// test
+		accounts, err := accountService.GetAll(context.Background(), 10, 2)
+		assert.Nil(t, accounts)
+		assert.NotNil(t, err)
+		assert.Error(t, err)
+		assert.Equal(t, errMessage, err.Error())
+		accountRepositoryMock.Mock.AssertExpectations(t)
+	})
+	t.Run("test get all accounts error not found", func(t *testing.T) {
+		db, dbMock, err := sqlmock.New()
+		assert.Nil(t, err)
+
+		validate := validator.New()
+		configMock := mckConfig.NewConfigMock()
+		helperPasswordMock := mckHelper.NewHelperPasswordMock()
+		accountRepositoryMock := mck.NewAccountRepository()
+		accountService := service.NewAccountService(db, validate, configMock, accountRepositoryMock, helperPasswordMock)
+
+		// mock
+		dbMock.ExpectBegin()
+		dbMock.ExpectRollback()
+
+		errMessage := "record not found"
+		accountRepositoryMock.Mock.On("GetAll", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
+			Return(nil, customError.NewNotFoundError(errMessage)).Times(1)
+
+		// test
+		all, err := accountService.GetAll(context.Background(), 10, 2)
+		assert.Nil(t, all)
+		assert.NotNil(t, err)
+		assert.Error(t, err)
+		assert.Equal(t, errMessage, err.Error())
+		accountRepositoryMock.Mock.AssertExpectations(t)
+	})
+}
